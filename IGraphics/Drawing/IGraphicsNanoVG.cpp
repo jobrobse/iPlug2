@@ -9,6 +9,7 @@
 */
 
 #include <cmath>
+#include <cstring>
 
 #include "IGraphicsNanoVG.h"
 #include "ITextEntryControl.h"
@@ -268,6 +269,18 @@ const char* IGraphicsNanoVG::GetDrawingAPIStr()
 #endif
 }
 
+// Returns true if PNG data has 16-bit bit depth
+static bool IsPNG16Bit(const unsigned char* pData, int dataSize)
+{
+  // PNG signature: 8 bytes + IHDR chunk header: 8 bytes + bit depth at byte 24
+  if (dataSize < 25) return false;
+  // Check PNG signature
+  static const unsigned char pngSig[8] = {137, 80, 78, 71, 13, 10, 26, 10};
+  if (memcmp(pData, pngSig, 8) != 0) return false;
+  // Byte 24 (0-indexed) is the bit depth field in IHDR
+  return pData[24] == 16;
+}
+
 bool IGraphicsNanoVG::BitmapExtSupported(const char* ext)
 {
   char extLower[32];
@@ -338,7 +351,10 @@ APIBitmap* IGraphicsNanoVG::LoadAPIBitmap(const char* fileNameOrResID, int scale
     if (pResData)
     {
       ScopedGLContext scopedGLCtx {this};
-      idx = nvgCreateImageMem(mVG, nvgImageFlags, (unsigned char*) pResData, size);
+      if (IsPNG16Bit((const unsigned char*)pResData, size))
+        idx = nvgCreateImageMem16(mVG, nvgImageFlags, (unsigned char*)pResData, size);
+      else
+        idx = nvgCreateImageMem(mVG, nvgImageFlags, (unsigned char*)pResData, size);
     }
   }
   else
@@ -346,7 +362,37 @@ APIBitmap* IGraphicsNanoVG::LoadAPIBitmap(const char* fileNameOrResID, int scale
   if (location == EResourceLocation::kAbsolutePath)
   {
     ScopedGLContext scopedGLCtx {this};
-    idx = nvgCreateImage(mVG, fileNameOrResID, nvgImageFlags);
+    
+    // Read file to detect 16-bit PNG
+    FILE* f = fopen(fileNameOrResID, "rb");
+    if (f)
+    {
+      fseek(f, 0, SEEK_END);
+      long fileSize = ftell(f);
+      fseek(f, 0, SEEK_SET);
+      
+      if (fileSize > 0)
+      {
+        unsigned char* fileData = (unsigned char*)malloc(fileSize);
+        if (fileData)
+        {
+          size_t bytesRead = fread(fileData, 1, fileSize, f);
+          if (bytesRead > 0)
+          {
+            if (IsPNG16Bit(fileData, (int)bytesRead))
+              idx = nvgCreateImageMem16(mVG, nvgImageFlags, fileData, (int)bytesRead);
+            else
+              idx = nvgCreateImageMem(mVG, nvgImageFlags, fileData, (int)bytesRead);
+          }
+          free(fileData);
+        }
+      }
+      fclose(f);
+    }
+    
+    // Fallback to original method if file reading failed
+    if (idx == 0)
+      idx = nvgCreateImage(mVG, fileNameOrResID, nvgImageFlags);
   }
 
   return new Bitmap(mVG, fileNameOrResID, scale, idx, location == EResourceLocation::kPreloadedTexture);
@@ -364,7 +410,10 @@ APIBitmap* IGraphicsNanoVG::LoadAPIBitmap(const char* name, const void* pData, i
 
     {
       ScopedGLContext scopedGLCtx {this};
-      idx = nvgCreateImageMem(mVG, nvgImageFlags, (unsigned char*)pData, dataSize);
+      if (IsPNG16Bit((const unsigned char*)pData, dataSize))
+        idx = nvgCreateImageMem16(mVG, nvgImageFlags, (unsigned char*)pData, dataSize);
+      else
+        idx = nvgCreateImageMem(mVG, nvgImageFlags, (unsigned char*)pData, dataSize);
     }
     
     pBitmap = new Bitmap(mVG, name, scale, idx, false);

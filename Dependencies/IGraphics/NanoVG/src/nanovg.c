@@ -817,9 +817,26 @@ int nvgCreateImageMem(NVGcontext* ctx, int imageFlags, unsigned char* data, int 
 	return image;
 }
 
+int nvgCreateImageMem16(NVGcontext* ctx, int imageFlags, unsigned char* data, int ndata)
+{
+	int w, h, n, image;
+	stbi_us* img = stbi_load_16_from_memory(data, ndata, &w, &h, &n, 4);
+	if (img == NULL) {
+		return 0;
+	}
+	image = nvgCreateImageRGBA16(ctx, w, h, imageFlags, (const unsigned char*)img);
+	stbi_image_free(img);
+	return image;
+}
+
 int nvgCreateImageRGBA(NVGcontext* ctx, int w, int h, int imageFlags, const unsigned char* data)
 {
 	return ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_RGBA, w, h, imageFlags, data);
+}
+
+int nvgCreateImageRGBA16(NVGcontext* ctx, int w, int h, int imageFlags, const unsigned char* data)
+{
+	return ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_RGBA16, w, h, imageFlags, data);
 }
 
 void nvgUpdateImage(NVGcontext* ctx, int image, const unsigned char* data)

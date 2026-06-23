@@ -375,9 +375,18 @@ int nvgCreateImage(NVGcontext* ctx, const char* filename, int imageFlags);
 // Returns handle to the image.
 int nvgCreateImageMem(NVGcontext* ctx, int imageFlags, unsigned char* data, int ndata);
 
+// Creates image from 16-bit per channel RGBA PNG data in memory.
+// Uses stbi_load_16_from_memory() for high-precision decoding.
+// Returns handle to the image.
+int nvgCreateImageMem16(NVGcontext* ctx, int imageFlags, unsigned char* data, int ndata);
+
 // Creates image from specified image data.
 // Returns handle to the image.
 int nvgCreateImageRGBA(NVGcontext* ctx, int w, int h, int imageFlags, const unsigned char* data);
+
+// Creates image from specified 16-bit image data.
+// Returns handle to the image.
+int nvgCreateImageRGBA16(NVGcontext* ctx, int w, int h, int imageFlags, const unsigned char* data);
 
 // Updates image data specified by image handle.
 void nvgUpdateImage(NVGcontext* ctx, int image, const unsigned char* data);
@@ -626,6 +635,7 @@ int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, floa
 enum NVGtexture {
 	NVG_TEXTURE_ALPHA = 0x01,
 	NVG_TEXTURE_RGBA = 0x02,
+	NVG_TEXTURE_RGBA16 = 0x04,
 };
 
 struct NVGscissor {
