@@ -580,7 +580,9 @@ void mnvgReadPixels(NVGcontext* ctx, int image, int x, int y, int width,
   if (tex == nil) return;
 
   NSUInteger bytesPerRow;
-  if (tex->type == NVG_TEXTURE_RGBA) {
+  if (tex->type == NVG_TEXTURE_RGBA16) {
+    bytesPerRow = tex->tex.width * 8;
+  } else if (tex->type == NVG_TEXTURE_RGBA) {
     bytesPerRow = tex->tex.width * 4;
   } else {
     bytesPerRow = tex->tex.width;
@@ -817,7 +819,7 @@ enum MNVGTarget mnvgTarget() {
     }
     frag->type = MNVG_SHADER_FILLIMG;
 
-    if (tex->type == NVG_TEXTURE_RGBA)
+    if (tex->type == NVG_TEXTURE_RGBA || tex->type == NVG_TEXTURE_RGBA16)
       frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0 : 1;
     else
       frag->texType = 2;
@@ -1174,6 +1176,9 @@ enum MNVGTarget mnvgTarget() {
   if (type == NVG_TEXTURE_ALPHA) {
     pixelFormat = MTLPixelFormatR8Unorm;
   }
+  else if (type == NVG_TEXTURE_RGBA16) {
+    pixelFormat = MTLPixelFormatRGBA16Unorm;
+  }
 
   tex->type = type;
   tex->flags = imageFlags;
@@ -1193,7 +1198,9 @@ enum MNVGTarget mnvgTarget() {
 
   if (data != NULL) {
     NSUInteger bytesPerRow;
-    if (tex->type == NVG_TEXTURE_RGBA) {
+    if (tex->type == NVG_TEXTURE_RGBA16) {
+      bytesPerRow = width * 8;
+    } else if (tex->type == NVG_TEXTURE_RGBA) {
       bytesPerRow = width * 4;
     } else {
       bytesPerRow = width;
@@ -1644,7 +1651,10 @@ error:
 
   unsigned char* bytes;
   NSUInteger bytesPerRow;
-  if (tex->type == NVG_TEXTURE_RGBA) {
+  if (tex->type == NVG_TEXTURE_RGBA16) {
+    bytesPerRow = tex->tex.width * 8;
+    bytes = (unsigned char*)data + y * bytesPerRow + x * 8;
+  } else if (tex->type == NVG_TEXTURE_RGBA) {
     bytesPerRow = tex->tex.width * 4;
     bytes = (unsigned char*)data + y * bytesPerRow + x * 4;
   } else {
