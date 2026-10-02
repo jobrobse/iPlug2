@@ -326,6 +326,7 @@ public:
   /** Set the rectangular mouse tracking target area, within the graphics context for this control
    * @param bounds The control's new target bounds within the graphics context */
   void SetTargetRECT(const IRECT& bounds) { mTargetRECT = bounds; mMouseIsOver = false; }
+  void SetBounds(const IRECT& bounds) { mRECT = mTargetRECT = bounds; mMouseIsOver = false; }
   
   /** Set BOTH the draw rect and the target area, within the graphics context for this control
    * @param bounds The control's new draw and target bounds within the graphics context */

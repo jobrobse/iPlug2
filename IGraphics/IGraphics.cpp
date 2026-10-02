@@ -1516,14 +1516,18 @@ void IGraphics::OnDragResize(float x, float y)
 {
   if(mGUISizeMode == EUIResizerMode::Scale)
   {
-    float scaleX = (x * GetDrawScale()) / mMouseDownX;
-    float scaleY = (y * GetDrawScale()) / mMouseDownY;
+    float scaleX = x / std::max(0.001f, mMouseDownX);
+    float scaleY = y / std::max(0.001f, mMouseDownY);
 
     Resize(Width(), Height(), std::min(scaleX, scaleY));
   }
   else
   {
-    Resize(static_cast<int>(x), static_cast<int>(y), GetDrawScale());
+    const float aspect = static_cast<float>(Width()) / std::max(1, Height());
+    const float constrainedHeight = std::min(y, x / std::max(0.001f, aspect));
+    const int height = std::max(1, static_cast<int>(std::lround(constrainedHeight)));
+    const int width = std::max(1, static_cast<int>(std::lround(height * aspect)));
+    Resize(width, height, GetDrawScale());
   }
 }
 
